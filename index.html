@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="data:," type="image/x-icon">
+    <title>알뜰 배달 시스템</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .big-button {
+            width: 200px;
+            height: 100px;
+            font-size: 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        h1 {
+            margin: 20px 0;
+            font-family: 'Nanum Gothic', sans-serif;
+        }
+
+        img {
+            top: 5px;
+            position: fixed;
+            width: 220px;
+            height: 130px;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            display: flex; /* flex-box 모델 적용 */
+            justify-content: center; /* 가운데 정렬 */
+            gap: 20px; /* 버튼 사이의 간격 */
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/test');
+            var videoElement = document.querySelector('img');
+            var startButton = document.getElementById('start-delivery');
+            var unlockButton = document.getElementById('unlock');
+
+
+            socket.on('connect', function() {
+                console.log('Websocket connected!');
+            });
+
+            socket.on('button_action', function(data) {
+                startButton.style.display = data.display;
+            });
+
+            socket.on('video_status', function(data) {
+                if (data.status === 'ON') {
+                    videoElement.style.display = 'block';
+                    videoElement.src = "/video_feed?t=" + new Date().getTime();
+                } else {
+                    videoElement.style.display = 'none';
+                }
+            });
+
+            startButton.addEventListener('click', function() {
+                fetch('/start', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Response received", data);
+                }).catch(error => {
+                    console.error("Error fetching start delivery:", error);
+                });
+            });
+
+            unlockButton.addEventListener('click', function() {
+                fetch('/unlock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({message: "잠금해제"})
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Camera unlocked successfully.');
+                    }
+                }).catch(error => {
+                    console.error("Error unlocking camera:", error);
+                });
+            });
+        });
+
+    </script>
+</head>
+<body>
+    <img src="/video_feed" style="width:220px; height:130px;">
+    <h1>알뜰 배달 시스템</h1>
+    <div class="button-container">
+        <button id="unlock"
+                class="big-button">
+            잠금 해제
+        </button>
+        <button id="complete-delivery" class="big-button">배송 완료</button>
+        <button id="start-delivery" class="big-button">배송 시작</button>
+    </div>
+    <div id="message"></div>
+</body>
+</html>
